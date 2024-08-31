@@ -1,0 +1,9 @@
+.swiper-wrapper[prefix="_swiperWrp-je-32"] {
+    width: fit-content;
+    height: 100%;
+    display: flex;
+}
+
+.swiper-wrapper[prefix="_swiperWrp-je-32"].loaded {
+    transition: transform 400ms ease-in-out;
+}
