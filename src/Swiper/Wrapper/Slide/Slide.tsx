@@ -1,4 +1,4 @@
-import {
+import React, {
   ForwardedRef,
   forwardRef,
   MutableRefObject,
@@ -42,8 +42,15 @@ export const Slide = forwardRef(function Slide(
 
   const { textContent } = rendering;
 
+  const [stateClassNamesToDuplicateSlide, setStateClassNamesToDuplicateSlide] =
+    useState(CLASSNAME_DEFAULT);
+
   const [stateClassNameToSlide, setStateClassNameToSlide] =
     useState(CLASSNAME_DEFAULT);
+
+  const [stateToWindowWidth, setStateToWindowInnerWidth] = useState(
+    window.innerWidth
+  );
 
   const whenSlideIsActive = uidIndex === stateIndexToSlide;
   const whenSlideIsNext = uidIndex === stateIndexToSlide + 1;
@@ -53,6 +60,9 @@ export const Slide = forwardRef(function Slide(
   const whenSlideIsPrevAndFirstSlide =
     stateIndexToSlide === endIndex && uidIndex === startIndex;
 
+  /**
+   *
+   */
   const updateClassNames = () => {
     if (whenSlideIsActive) {
       setStateClassNameToSlide(
@@ -81,23 +91,24 @@ export const Slide = forwardRef(function Slide(
   useEffect(() => {
     updateClassNames();
   }, [stateIndexToSlide]);
-  if (isDuplicateSlide === true) {
-    return (
-      <div
-        className={`${CLASSNAME_DEFAULT} ${CLASSNAME_DUPLICATE}`}
-        itemID={uidIndex.toString()}
-        prefix={PREFIX}
-        ref={ref}
-      >
-        <div> {textContent}</div>
-      </div>
-    );
-  }
+
+  useEffect(() => {
+    if (isDuplicateSlide === true) {
+      setStateClassNamesToDuplicateSlide(
+        `${CLASSNAME_DEFAULT} ${CLASSNAME_DUPLICATE}`
+      );
+    }
+  }, []);
   return (
     <div
-      className={stateClassNameToSlide}
+      className={
+        isDuplicateSlide === true
+          ? stateClassNamesToDuplicateSlide
+          : stateClassNameToSlide
+      }
       itemID={uidIndex.toString()}
       prefix={PREFIX}
+      style={{ width: `${stateToWindowWidth}px` }}
       ref={ref}
     >
       <div> {textContent}</div>
