@@ -25,8 +25,10 @@ export default function Wrapper() {
   const [stateIndexToSlide, setStateIndexToSlide] =
     useState(INDEX_TO_START_SLIDE);
   const [stateHaveRunSlide, setStateHaveRunSlide] = useState(false);
-  const [stateToWidthToSlide, setStateToWidthToSlide] = useState("");
   const [stateClassName, setStateClassName] = useState("swiper-wrapper");
+  const [stateToWindowWidth, setStateToWindowInnerWidth] = useState(
+    window.innerWidth
+  );
 
   const DuplicateSlideComponent = [refForDuplicateSlide].map((ref) => {
     return (
@@ -103,23 +105,30 @@ export default function Wrapper() {
   }, [stateIndexToSlide, stateHaveRunSlide]);
 
   useEffect(() => {
-    console.log("stateIndexToSlide", stateIndexToSlide);
-  }, [stateIndexToSlide]);
+    const updateWindowSize = (event: UIEvent) => {
+      const { innerWidth } = window;
 
-  useEffect(() => {
-    const innerWidthforSlide = refs[0].current?.style.width;
+      setStateToWindowInnerWidth(innerWidth);
+    };
 
-    if (innerWidthforSlide !== undefined) {
-      setStateToWidthToSlide(innerWidthforSlide);
-    }
-  }, [stateToWidthToSlide]);
+    window.addEventListener("resize", updateWindowSize);
+
+    return () => {
+      window.removeEventListener("resize", updateWindowSize);
+    };
+  }, []);
+
+  // for dev
+  // useEffect(() => {
+  //   console.log("stateIndexToSlide", stateIndexToSlide);
+  // }, [stateIndexToSlide]);
 
   return (
     <div
       className={stateClassName}
       style={{
         transform: `translate3D(${
-          stateIndexToSlide * -convertWidthPxToNumber(stateToWidthToSlide)
+          stateIndexToSlide * -stateToWindowWidth
         }px, 0, 0)`,
       }}
       prefix={PREFIX}
@@ -138,8 +147,4 @@ function createRefsToSlide(slideSize: number) {
     i++;
   }
   return refsToSlide;
-}
-
-function convertWidthPxToNumber(width: string) {
-  return Number(width.split("px").join(""));
 }

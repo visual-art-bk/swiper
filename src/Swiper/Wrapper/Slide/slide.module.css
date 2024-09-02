@@ -1,13 +1,18 @@
 .swiper-slide[prefix="_swpSlide-md-54"] {
+  flex-shrink: 0;
+
   height: 100px;
   display: flex;
   justify-content: center;
   align-items: center;
   text-align: center;
+
+  /* test css values */
+  border: 1px solid black;
+  background-color: lightblue;
 }
 
 .swiper-slide[prefix="_swpSlide-md-54"] div {
   /* test css values */
   font-size: 48px;
-  width: 100%;
 }

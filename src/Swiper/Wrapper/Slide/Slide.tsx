@@ -88,6 +88,7 @@ export const Slide = forwardRef(function Slide(
       setStateClassNameToSlide(CLASSNAME_DEFAULT);
     }
   };
+
   useEffect(() => {
     updateClassNames();
   }, [stateIndexToSlide]);
@@ -99,6 +100,26 @@ export const Slide = forwardRef(function Slide(
       );
     }
   }, []);
+
+  useEffect(() => {
+    const updateWindowSize = (event: UIEvent) => {
+      const { innerWidth } = window;
+   
+      setStateToWindowInnerWidth(innerWidth);
+    };
+
+    window.addEventListener("resize", updateWindowSize);
+
+    return () => {
+      window.removeEventListener("resize", updateWindowSize);
+    };
+  }, []);
+
+  // dev
+  useEffect(() => {
+    console.warn("stateToWindowWidth", stateToWindowWidth);
+  }, [stateToWindowWidth]);
+
   return (
     <div
       className={
