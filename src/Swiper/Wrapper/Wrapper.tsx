@@ -7,16 +7,13 @@ import {
   useState,
   useReducer,
 } from "react";
-import "./wrapper.module.css";
-import {
-  actionTypes,
-  initialStateToSwiper,
-  localReducer,
-  swiperStateType,
-  swiperClassNameStateType,
-} from "./localReducer/localReducer";
-import { Slide } from "./Slide/Slide";
+import { useRecoilState } from "recoil";
 
+import "./wrapper.module.css";
+import { Slide } from "./Slide/Slide";
+import Store from "@/Store/Store";
+
+const { atomToSwiper } = Store.getAtoms();
 const PREFIX = "_swiperWrp-je-32";
 
 const DURATION_MS = 3000;
@@ -34,10 +31,8 @@ export default function Wrapper() {
   const refs = createRefsToSlide(SLIDES_SIZE);
   const refForDuplicateSlide = refs[INDEX_TO_DUPLICATE_SLIDE];
 
-  const [stateOfSwiper, dispatchToSwiper] = useReducer(
-    localReducer,
-    initialStateToSwiper
-  );
+  const [stateToSwiper, setStateToSwiper] = useRecoilState(atomToSwiper);
+  const [stateToClassName, setStateToClassName] = useState("swiper-wrapper");
 
   const [stateIndexToSlide, setStateIndexToSlide] =
     useState(INDEX_TO_START_SLIDE);
@@ -85,27 +80,33 @@ export default function Wrapper() {
 
   const initStartPositionByDuplicateSlide = () => {
     setStateIndexToSlide(INDEX_TO_FIRST_SLIDE);
-    dispatchToSwiper({
-      type: actionTypes.inilizedPosition,
+    setStateToSwiper({
+      ...stateToSwiper,
+      motionState: "inactive",
+      transition: "",
     });
   };
 
   const resumeAtDuplicateSlideAfterInitPosition = () => {
     setStateIndexToSlide(INDEX_TO_START_SLIDE);
-
-    dispatchToSwiper({
-      type: actionTypes.runSwiper,
+    setStateToSwiper({
+      ...stateToSwiper,
+      motionState: "active",
+      transition: "transform 300ms ease-in-out",
     });
   };
 
   const runSlide = () => {
     if (
-      stateOfSwiper.swiper === swiperStateType.inactive &&
-      stateOfSwiper.transition === ""
+      stateToSwiper.motionState === "inactive" &&
+      stateToSwiper.transition === ""
     ) {
-      dispatchToSwiper({ type: actionTypes.runSwiper });
+      setStateToSwiper({
+        ...stateToSwiper,
+        motionState: "active",
+        transition: "transform 300ms ease-in-out",
+      });
     }
-
     let indexToNextSlide = 0;
     if (stateIndexToSlide > INDEX_TO_LAST_SLIDE) {
       indexToNextSlide = INDEX_TO_START_SLIDE;
@@ -120,10 +121,26 @@ export default function Wrapper() {
     setStateIndexToSlide(indexToNextSlide);
   };
 
+  const updateWindowSize = () => {
+    clearInterval(intervalID);
+
+    const { innerWidth } = window;
+    setStateToWindowInnerWidth(innerWidth);
+
+    setStateToSwiper({
+      ...stateToSwiper,
+      motionState: "inactive",
+      transition: "",
+    });
+    resumeSlideAfterResizeWidth();
+  };
+
   const resumeSlideAfterResizeWidth = () => {
     setTimeout(() => {
-      dispatchToSwiper({
-        type: actionTypes.runSwiper,
+      setStateToSwiper({
+        ...stateToSwiper,
+        motionState: "active",
+        transition: "transform 300ms ease-in-out",
       });
     }, DELAY_AFTER_WIDTH_RESIZE_MS);
   };
@@ -136,23 +153,12 @@ export default function Wrapper() {
         clearInterval(intervalID);
       };
     },
-    [stateIndexToSlide, stateOfSwiper.swiper]
+    [stateIndexToSlide, stateToSwiper]
   );
+
 
   useEffect(
     function WidthResizer() {
-      const updateWindowSize = () => {
-        clearInterval(intervalID);
-
-        const { innerWidth } = window;
-        setStateToWindowInnerWidth(innerWidth);
-
-        dispatchToSwiper({
-          type: actionTypes.resisedWindowWidth,
-        });
-        resumeSlideAfterResizeWidth();
-      };
-
       window.addEventListener("resize", updateWindowSize);
 
       return () => {
@@ -163,6 +169,13 @@ export default function Wrapper() {
     [stateToWindowWidth]
   );
 
+  useEffect(() => {
+    if (stateToSwiper.motionState === "active") {
+      setStateToClassName("swiper-wrapper loaded");
+    } else {
+      setStateToClassName("swiper-wrapper");
+    }
+  }, [stateToSwiper.motionState]);
   // dev
   // useEffect(() => {
   //   console.warn(
@@ -174,12 +187,12 @@ export default function Wrapper() {
   // ]);
   return (
     <div
-      className={stateOfSwiper.classNames}
+      className={stateToClassName}
       style={{
         transform: `translate3D(${
           stateIndexToSlide * -stateToWindowWidth
         }px, 0, 0)`,
-        transition: stateOfSwiper.transition,
+        transition: stateToSwiper.transition,
       }}
       prefix={PREFIX}
     >

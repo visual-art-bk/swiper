@@ -7,6 +7,8 @@ import React, {
   useState,
 } from "react";
 
+import ImageMatrixer from "./ImageMatrixer/ImageMatrixer";
+
 import "./slide.module.css";
 
 const PREFIX = "_swpSlide-md-54";
@@ -132,7 +134,7 @@ export const Slide = forwardRef(function Slide(
       style={{ width: `${stateToWindowWidth}px` }}
       ref={ref}
     >
-      <div> {textContent}</div>
+      <ImageMatrixer></ImageMatrixer>
     </div>
   );
 });
