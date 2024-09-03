@@ -116,9 +116,9 @@ export const Slide = forwardRef(function Slide(
   }, []);
 
   // dev
-  useEffect(() => {
-    console.warn("stateToWindowWidth", stateToWindowWidth);
-  }, [stateToWindowWidth]);
+  // useEffect(() => {
+  //   // console.warn("stateToWindowWidth", stateToWindowWidth);
+  // }, [stateToWindowWidth]);
 
   return (
     <div

@@ -5,14 +5,22 @@ import {
   useEffect,
   useRef,
   useState,
+  useReducer,
 } from "react";
 import "./wrapper.module.css";
+import {
+  actionTypes,
+  initialStateToSwiper,
+  localReducer,
+  swiperStateType,
+  swiperClassNameStateType,
+} from "./localReducer/localReducer";
 import { Slide } from "./Slide/Slide";
 
 const PREFIX = "_swiperWrp-je-32";
 
-const DURATION = 3000;
-const DELAY_AFTER_WIDTH_RESIZE = 3000;
+const DURATION_MS = 3000;
+const DELAY_AFTER_WIDTH_RESIZE_MS = 3000;
 const INDEX_TO_FIRST_SLIDE = 0;
 const INDEX_TO_START_SLIDE = 1;
 const INDEX_TO_LAST_SLIDE = 4;
@@ -26,16 +34,16 @@ export default function Wrapper() {
   const refs = createRefsToSlide(SLIDES_SIZE);
   const refForDuplicateSlide = refs[INDEX_TO_DUPLICATE_SLIDE];
 
+  const [stateOfSwiper, dispatchToSwiper] = useReducer(
+    localReducer,
+    initialStateToSwiper
+  );
+
   const [stateIndexToSlide, setStateIndexToSlide] =
     useState(INDEX_TO_START_SLIDE);
-  const [stateClassName, setStateClassName] = useState("swiper-wrapper");
   const [stateToWindowWidth, setStateToWindowInnerWidth] = useState(
     window.innerWidth
   );
-  const [stateToSlideWrapper, setStateToSlideWrapper] = useState({
-    isRunning: false,
-    transition: "",
-  });
 
   const DuplicateSlideComponent = [refForDuplicateSlide].map((ref) => {
     return (
@@ -76,35 +84,26 @@ export default function Wrapper() {
   const AllSlideComponent = [DuplicateSlideComponent, ...SlideComponents];
 
   const initStartPositionByDuplicateSlide = () => {
-    setStateClassName("swiper-wrapper");
     setStateIndexToSlide(INDEX_TO_FIRST_SLIDE);
-    setStateToSlideWrapper({
-      ...stateToSlideWrapper,
-      transition: "",
-      isRunning: false,
+    dispatchToSwiper({
+      type: actionTypes.inilizedPosition,
     });
   };
 
-  const resumeSlideAfterInitPosition = () => {
+  const resumeAtDuplicateSlideAfterInitPosition = () => {
     setStateIndexToSlide(INDEX_TO_START_SLIDE);
-    setStateClassName("swiper-wrapper loaded");
-    setStateToSlideWrapper({
-      ...stateToSlideWrapper,
-      transition: "transform 400ms ease-in-out",
-      isRunning: true,
+
+    dispatchToSwiper({
+      type: actionTypes.runSwiper,
     });
   };
 
   const runSlide = () => {
     if (
-      stateToSlideWrapper.isRunning === false ||
-      stateToSlideWrapper.transition === ""
+      stateOfSwiper.swiper === swiperStateType.inactive &&
+      stateOfSwiper.transition === ""
     ) {
-      setStateToSlideWrapper({
-        ...stateToSlideWrapper,
-        transition: "transform 400ms ease-in-out",
-        isRunning: true,
-      });
+      dispatchToSwiper({ type: actionTypes.runSwiper });
     }
 
     let indexToNextSlide = 0;
@@ -112,51 +111,46 @@ export default function Wrapper() {
       indexToNextSlide = INDEX_TO_START_SLIDE;
 
       initStartPositionByDuplicateSlide();
-      setTimeout(resumeSlideAfterInitPosition);
+      setTimeout(resumeAtDuplicateSlideAfterInitPosition);
       return;
     } else {
       indexToNextSlide = stateIndexToSlide + 1;
     }
 
     setStateIndexToSlide(indexToNextSlide);
-    setStateClassName("swiper-wrapper loaded");
   };
 
-  const updateStateToSlideAfterResize = () => {
+  const resumeSlideAfterResizeWidth = () => {
     setTimeout(() => {
-      setStateToSlideWrapper({
-        ...stateToSlideWrapper,
-        isRunning: true,
+      dispatchToSwiper({
+        type: actionTypes.runSwiper,
       });
-    }, DELAY_AFTER_WIDTH_RESIZE);
-  }
+    }, DELAY_AFTER_WIDTH_RESIZE_MS);
+  };
 
   useEffect(
     function SliderWrapperRunner() {
-      intervalID = setInterval(runSlide, DURATION);
+      intervalID = setInterval(runSlide, DURATION_MS);
 
       return () => {
         clearInterval(intervalID);
       };
     },
-    [stateIndexToSlide, stateToSlideWrapper]
+    [stateIndexToSlide, stateOfSwiper.swiper]
   );
 
   useEffect(
     function WidthResizer() {
-      const updateWindowSize = (event: UIEvent) => {
+      const updateWindowSize = () => {
         clearInterval(intervalID);
 
         const { innerWidth } = window;
         setStateToWindowInnerWidth(innerWidth);
 
-        setStateToSlideWrapper({
-          ...stateToSlideWrapper,
-          transition: "",
-          isRunning: false,
+        dispatchToSwiper({
+          type: actionTypes.resisedWindowWidth,
         });
-
-        updateStateToSlideAfterResize()
+        resumeSlideAfterResizeWidth();
       };
 
       window.addEventListener("resize", updateWindowSize);
@@ -166,21 +160,26 @@ export default function Wrapper() {
         clearTimeout(timeouId);
       };
     },
-    [stateToSlideWrapper]
+    [stateToWindowWidth]
   );
 
   // dev
-  useEffect(() => {
-    console.warn('stateToSlideWrapper', stateToSlideWrapper)
-  })
+  // useEffect(() => {
+  //   console.warn(
+  //     "stateToSlideWrapper", stateOfSwiper
+
+  //   );
+  // }, [
+  //   stateOfSwiper
+  // ]);
   return (
     <div
-      className={stateClassName}
+      className={stateOfSwiper.classNames}
       style={{
         transform: `translate3D(${
           stateIndexToSlide * -stateToWindowWidth
         }px, 0, 0)`,
-        transition: stateToSlideWrapper.transition,
+        transition: stateOfSwiper.transition,
       }}
       prefix={PREFIX}
     >
