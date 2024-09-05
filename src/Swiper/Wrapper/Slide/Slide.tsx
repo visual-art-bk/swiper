@@ -134,7 +134,8 @@ export const Slide = forwardRef(function Slide(
       style={{ width: `${stateToWindowWidth}px` }}
       ref={ref}
     >
-      <ImageMatrixer></ImageMatrixer>
+      {/* <ImageMatrixer></ImageMatrixer> */}
+      <div>{uidIndex.toString()}</div>
     </div>
   );
 });
