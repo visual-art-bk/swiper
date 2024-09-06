@@ -18,18 +18,20 @@ const PREFIX = "_swiperWrp-je-32";
 
 const DURATION_MS = 5000;
 const DELAY_AFTER_WIDTH_RESIZE_MS = 3000;
-const INDEX_TO_DULICATE_SLIDE = 0;
+const INDEX_TO_DUPLICATE_SLIDE = 0;
 const INDEX_TO_START_SLIDE = 1;
 const INDEX_TO_LAST_SLIDE = 2;
-const INDEX_TO_DUPLICATE_SLIDE = INDEX_TO_LAST_SLIDE + 1;
+const FOR_DEV_INDEX_TO_DUPLICATE_SLIDE = INDEX_TO_LAST_SLIDE + 1;
 const SLIDES_SIZE = INDEX_TO_LAST_SLIDE + 1;
 
 let timeOutID: NodeJS.Timeout;
 let timeouId: NodeJS.Timeout;
 
 export default function Wrapper() {
+  //@TODO It should do clearfy.
   const refs = createRefsToSlide(SLIDES_SIZE);
-  const refForDuplicateSlide = refs[INDEX_TO_DUPLICATE_SLIDE];
+  //@TODO It should do clearfy. what FOR_DEV_INDEX_TO_DUPLICATE_SLIDE?
+  const refForDuplicateSlide = refs[FOR_DEV_INDEX_TO_DUPLICATE_SLIDE];
 
   const [stateToSwiper, setStateToSwiper] = useRecoilState(atomToSwiper);
   const [stateToClassName, setStateToClassName] = useState("swiper-wrapper");
@@ -42,16 +44,16 @@ export default function Wrapper() {
 
   const DuplicateSlideComponent = [refForDuplicateSlide].map((ref) => {
     return (
-      <Fragment key={"duplicate_" + INDEX_TO_DUPLICATE_SLIDE}>
+      <Fragment key={"duplicate_" + FOR_DEV_INDEX_TO_DUPLICATE_SLIDE}>
         <Slide
           isDuplicateSlide={true}
           ref={ref}
           uidIndex={INDEX_TO_DUPLICATE_SLIDE}
           endIndex={INDEX_TO_LAST_SLIDE}
-          startIndex={INDEX_TO_DULICATE_SLIDE}
+          startIndex={INDEX_TO_DUPLICATE_SLIDE}
           stateIndexToSlide={stateIndexToSlide}
           rendering={{
-            textContent: INDEX_TO_DUPLICATE_SLIDE.toString(),
+            textContent: FOR_DEV_INDEX_TO_DUPLICATE_SLIDE.toString(),
           }}
         ></Slide>
       </Fragment>
@@ -66,7 +68,7 @@ export default function Wrapper() {
           ref={ref}
           uidIndex={index + INDEX_TO_START_SLIDE}
           endIndex={INDEX_TO_LAST_SLIDE}
-          startIndex={INDEX_TO_DULICATE_SLIDE}
+          startIndex={INDEX_TO_DUPLICATE_SLIDE}
           stateIndexToSlide={stateIndexToSlide}
           rendering={{
             textContent: (index + INDEX_TO_START_SLIDE).toString(),
@@ -78,33 +80,30 @@ export default function Wrapper() {
 
   const AllSlideComponent = [DuplicateSlideComponent, ...SlideComponents];
 
-  const updateIndex = () => {
-    return new Promise(async () => {
-      let indexToNextSlide = 0;
-
-      if (stateIndexToSlide > INDEX_TO_LAST_SLIDE) {
-        await setSwiperStateAsync([
-          { motionState: "inactive", transition: "" },
-          setStateToSwiper,
-        ]);
-        await setIndexAsync([INDEX_TO_DULICATE_SLIDE, setStateIndexToSlide]);
-        return;
-      }
-
-      indexToNextSlide = stateIndexToSlide + 1;
-      await setIndexAsync([indexToNextSlide, setStateIndexToSlide]);
-    });
-  };
-
   const runSlide = async () => {
-    await setSwiperStateAsync([
-      { motionState: "active", transition: "transform 300ms ease-in-out" },
-      setStateToSwiper,
-    ]);
+    if (stateIndexToSlide > INDEX_TO_LAST_SLIDE) {
+      await setSwiperStateAsync([
+        { motionState: "inactive", transition: "" },
+        setStateToSwiper,
+      ]);
 
-    // await delay(500, "....HOLDING"); //for dev
+      await setIndexAsync([INDEX_TO_DUPLICATE_SLIDE, setStateIndexToSlide]);
+      return;
+    }
 
-    await updateIndex();
+    if (
+      (stateIndexToSlide === INDEX_TO_DUPLICATE_SLIDE ||
+        stateIndexToSlide === INDEX_TO_START_SLIDE) &&
+      stateToSwiper.motionState === "inactive" &&
+      stateToSwiper.transition === ""
+    ) {
+      await setSwiperStateAsync([
+        { motionState: "active", transition: "transform 300ms ease-in-out" },
+        setStateToSwiper,
+      ]);
+    }
+
+    await setIndexAsync([stateIndexToSlide + 1, setStateIndexToSlide]);
   };
 
   const updateWindowSize = () => {
@@ -131,10 +130,8 @@ export default function Wrapper() {
 
   useEffect(
     function SliderWrapperRunner() {
-      let duration =
-        stateIndexToSlide === INDEX_TO_DULICATE_SLIDE ? 0 : DURATION_MS;
-
-      console.warn(`DURATION: [ ${duration}ms ]`);
+      const duration =
+        stateIndexToSlide === INDEX_TO_DUPLICATE_SLIDE ? 0 : DURATION_MS;
 
       timeOutID = setTimeout(runSlide, duration);
 
@@ -221,4 +218,19 @@ function setSwiperStateAsync([state, setStateToSwiper]: [
       })
     );
   });
+}
+
+function adjustDuration({
+  stateIndexToSlide,
+  indexToDuplicateSlideForMask,
+  duration,
+}: {
+  stateIndexToSlide: number;
+  indexToDuplicateSlideForMask: number;
+  duration: number;
+}) {
+  const durationWhenDuplicateSlideMask = 0;
+  return stateIndexToSlide === indexToDuplicateSlideForMask
+    ? durationWhenDuplicateSlideMask
+    : duration;
 }

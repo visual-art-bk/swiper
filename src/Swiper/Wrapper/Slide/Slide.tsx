@@ -54,18 +54,18 @@ export const Slide = forwardRef(function Slide(
     window.innerWidth
   );
 
-  const whenSlideIsActive = uidIndex === stateIndexToSlide;
-  const whenSlideIsNext = uidIndex === stateIndexToSlide + 1;
-  const whenSlideIsPrev = uidIndex === stateIndexToSlide - 1;
-  const whenSlideIsPrevAndLastSlide =
-    stateIndexToSlide === startIndex && uidIndex === endIndex;
-  const whenSlideIsPrevAndFirstSlide =
-    stateIndexToSlide === endIndex && uidIndex === startIndex;
-
   /**
    *
    */
   const updateClassNames = () => {
+    const whenSlideIsActive = uidIndex === stateIndexToSlide;
+    const whenSlideIsNext = uidIndex === stateIndexToSlide + 1;
+    const whenSlideIsPrev = uidIndex === stateIndexToSlide - 1;
+    const whenSlideIsPrevAndLastSlide =
+      stateIndexToSlide === startIndex && uidIndex === endIndex;
+    const whenSlideIsPrevAndFirstSlide =
+      stateIndexToSlide === endIndex && uidIndex === startIndex;
+
     if (whenSlideIsActive) {
       setStateClassNameToSlide(
         getClassnames([CLASSNAME_DEFAULT, CLASSNAME_ACTIVE])
@@ -106,7 +106,7 @@ export const Slide = forwardRef(function Slide(
   useEffect(() => {
     const updateWindowSize = (event: UIEvent) => {
       const { innerWidth } = window;
-   
+
       setStateToWindowInnerWidth(innerWidth);
     };
 
@@ -135,7 +135,7 @@ export const Slide = forwardRef(function Slide(
       ref={ref}
     >
       {/* <ImageMatrixer></ImageMatrixer> */}
-      <div>{uidIndex.toString()}</div>
+      <div>{rendering.textContent}</div>
     </div>
   );
 });

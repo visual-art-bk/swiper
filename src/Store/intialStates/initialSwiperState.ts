@@ -1,4 +1,4 @@
 export const initialSwiperState = {
-    motionState: 'inactive',
-    transition: '',
-}
+  motionState: "inactive",
+  transition: "",
+};
