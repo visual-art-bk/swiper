@@ -10,6 +10,10 @@ import {
 import { SetterOrUpdater, useRecoilState } from "recoil";
 
 import "./wrapper.module.css";
+import {
+  getRenderingChunks,
+  tRenderingForSlide,
+} from "./renderingForSlide/renderingForSlide";
 import { Slide } from "./Slide/Slide";
 import Store from "@/Store/Store";
 
@@ -21,18 +25,9 @@ const DELAY_AFTER_WIDTH_RESIZE_MS = 3000;
 const INDEX_TO_DUPLICATE_SLIDE = 0;
 const INDEX_TO_START_SLIDE = 1;
 const INDEX_TO_LAST_SLIDE = 2;
-const FOR_DEV_INDEX_TO_DUPLICATE_SLIDE = INDEX_TO_LAST_SLIDE + 1;
 const SLIDES_SIZE = INDEX_TO_LAST_SLIDE + 1;
 
-let timeOutID: NodeJS.Timeout;
-let timeouId: NodeJS.Timeout;
-
 export default function Wrapper() {
-  //@TODO It should do clearfy.
-  const refs = createRefsToSlide(SLIDES_SIZE);
-  //@TODO It should do clearfy. what FOR_DEV_INDEX_TO_DUPLICATE_SLIDE?
-  const refForDuplicateSlide = refs[FOR_DEV_INDEX_TO_DUPLICATE_SLIDE];
-
   const [stateToSwiper, setStateToSwiper] = useRecoilState(atomToSwiper);
   const [stateToClassName, setStateToClassName] = useState("swiper-wrapper");
 
@@ -42,43 +37,29 @@ export default function Wrapper() {
     window.innerWidth
   );
 
-  const DuplicateSlideComponent = [refForDuplicateSlide].map((ref) => {
+  const testSlideChunks = getRenderingChunks({
+    indexToDuplicateSlide: INDEX_TO_DUPLICATE_SLIDE,
+    sizeToDuplicateSlides: 1,
+    sizeToSlides: SLIDES_SIZE,
+  }).map((chunk, index) => {
+    const { content, isDuplicateSlide, key } = chunk;
     return (
-      <Fragment key={"duplicate_" + FOR_DEV_INDEX_TO_DUPLICATE_SLIDE}>
+      <Fragment key={key}>
         <Slide
-          isDuplicateSlide={true}
-          ref={ref}
-          uidIndex={INDEX_TO_DUPLICATE_SLIDE}
           endIndex={INDEX_TO_LAST_SLIDE}
+          isDuplicateSlide={isDuplicateSlide}
+          rendering={{
+            textContent: content.textContent,
+            itemId: content.itemId,
+            href: content.href,
+          }}
           startIndex={INDEX_TO_DUPLICATE_SLIDE}
           stateIndexToSlide={stateIndexToSlide}
-          rendering={{
-            textContent: FOR_DEV_INDEX_TO_DUPLICATE_SLIDE.toString(),
-          }}
+          uidIndex={index}
         ></Slide>
       </Fragment>
     );
   });
-
-  const SlideComponents = refs.map((ref, index) => {
-    return (
-      <Fragment key={index}>
-        <Slide
-          isDuplicateSlide={false}
-          ref={ref}
-          uidIndex={index + INDEX_TO_START_SLIDE}
-          endIndex={INDEX_TO_LAST_SLIDE}
-          startIndex={INDEX_TO_DUPLICATE_SLIDE}
-          stateIndexToSlide={stateIndexToSlide}
-          rendering={{
-            textContent: (index + INDEX_TO_START_SLIDE).toString(),
-          }}
-        ></Slide>
-      </Fragment>
-    );
-  });
-
-  const AllSlideComponent = [DuplicateSlideComponent, ...SlideComponents];
 
   const runSlide = async () => {
     if (stateIndexToSlide > INDEX_TO_LAST_SLIDE) {
@@ -130,10 +111,13 @@ export default function Wrapper() {
 
   useEffect(
     function SliderWrapperRunner() {
-      const duration =
-        stateIndexToSlide === INDEX_TO_DUPLICATE_SLIDE ? 0 : DURATION_MS;
+      const durationToSlides = adjustDuration({
+        durationToSlides: DURATION_MS,
+        indexToDuplicateSlideForMask: INDEX_TO_DUPLICATE_SLIDE,
+        stateIndexToSlide,
+      });
 
-      timeOutID = setTimeout(runSlide, duration);
+      const timeOutID = setTimeout(runSlide, durationToSlides);
 
       return () => {
         clearTimeout(timeOutID);
@@ -148,7 +132,6 @@ export default function Wrapper() {
 
       return () => {
         window.removeEventListener("resize", updateWindowSize);
-        clearTimeout(timeouId);
       };
     },
     [stateToWindowWidth]
@@ -178,20 +161,9 @@ export default function Wrapper() {
       }}
       prefix={PREFIX}
     >
-      {AllSlideComponent}
+      {testSlideChunks}
     </div>
   );
-}
-
-function createRefsToSlide(slideSize: number) {
-  let refsToSlide: RefObject<HTMLDivElement>[] = [];
-
-  let i = 0;
-  while (i < slideSize) {
-    refsToSlide.push(useRef(document.createElement("div")));
-    i++;
-  }
-  return refsToSlide;
 }
 
 function setIndexAsync([indexToSet, setStateIndexToSlide]: [
@@ -223,14 +195,14 @@ function setSwiperStateAsync([state, setStateToSwiper]: [
 function adjustDuration({
   stateIndexToSlide,
   indexToDuplicateSlideForMask,
-  duration,
+  durationToSlides,
 }: {
   stateIndexToSlide: number;
   indexToDuplicateSlideForMask: number;
-  duration: number;
+  durationToSlides: number;
 }) {
   const durationWhenDuplicateSlideMask = 0;
   return stateIndexToSlide === indexToDuplicateSlideForMask
     ? durationWhenDuplicateSlideMask
-    : duration;
+    : durationToSlides;
 }

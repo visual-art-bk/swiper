@@ -27,6 +27,8 @@ type tIndexes = {
   stateIndexToSlide: number;
   rendering: {
     textContent: string;
+    itemId?: string;
+    href?: string
   };
 };
 export const Slide = forwardRef(function Slide(
@@ -129,13 +131,17 @@ export const Slide = forwardRef(function Slide(
           ? stateClassNamesToDuplicateSlide
           : stateClassNameToSlide
       }
-      itemID={uidIndex.toString()}
+      itemID={props.rendering.itemId}
       prefix={PREFIX}
       style={{ width: `${stateToWindowWidth}px` }}
       ref={ref}
+     
     >
-      {/* <ImageMatrixer></ImageMatrixer> */}
-      <div>{rendering.textContent}</div>
+      {/* DEV */}
+      <a  href={props.rendering.href}>
+        {/* <ImageMatrixer></ImageMatrixer> */}
+        <div>{rendering.textContent}</div>
+      </a>
     </div>
   );
 });
