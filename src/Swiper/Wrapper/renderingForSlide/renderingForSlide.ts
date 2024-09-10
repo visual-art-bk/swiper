@@ -15,6 +15,9 @@ export type tRenderingForSlide = {
     itemId?: string;
     href?: string;
   };
+  playPros: {
+    durationToPlaySlide?: number;
+  };
 };
 /**
  * DEV
@@ -61,6 +64,7 @@ const initChunks =
         textContent:
           isDuplicate === true ? indexToLastSlide.toString() : index.toString(),
       },
+      playPros: {},
     };
 
     return (chunk = redering);
@@ -72,6 +76,22 @@ const addChunks = (chunk: tRenderingForSlide, index: number) => {
   chunk.content.itemId = addItemIds(index).itemId;
   chunk.content.href = addHrefs(index).href;
 };
+/**
+ *
+ * @param props
+ * @returns
+ */
+const addPropsToPlay =
+  (indexesToTargetSlide: number[]) => (chunk: tRenderingForSlide, index: number) => {
+    const filteredTargetIndexes = indexesToTargetSlide.filter(target => target === index)
+
+    if (filteredTargetIndexes.length === 0) {
+      return
+    }
+
+    const devDurationPlaySlide = 10000
+    chunk.playPros.durationToPlaySlide = devDurationPlaySlide 
+  };
 /**
  *
  *
@@ -90,6 +110,8 @@ export const getRenderingChunks = (
   );
 
   renderingChunks.forEach(addChunks);
+
+  renderingChunks.forEach(addPropsToPlay([2]))
 
   return renderingChunks;
 };

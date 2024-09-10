@@ -1,17 +1,23 @@
-import {atom} from 'recoil'
-import {initialSwiperState} from './intialStates/initialSwiperState'
-
+import { atom } from "recoil";
+import { initialSwiperState } from "./intialStates/initialSwiperState";
+import { intitialSlideState } from "./intialStates/intialSlideState";
 const Store = (() => {
-    const atomToSwiper = atom({
-        key:'swiper-state',
-        default: initialSwiperState
-    })
+  const atomToSwiper = atom({
+    key: "swiper-state",
+    default: initialSwiperState,
+  });
 
-    return {
-        getAtoms:() => ({
-            atomToSwiper
-        })
-    }
-})()
+  const atomToSlide = atom({
+    key: "slide-state",
+    default: intitialSlideState,
+  });
 
-export default Store
+  return {
+    getAtoms: () => ({
+      atomToSwiper,
+      atomToSlide
+    }),
+  };
+})();
+
+export default Store;
