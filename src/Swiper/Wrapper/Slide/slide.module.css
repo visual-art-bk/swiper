@@ -5,9 +5,11 @@
   align-items: center;
   text-align: center;
 
-  /* test css values */
+  /* 
+   test css values 
+  */
+  background-color: rgb(23, 93, 93);
   border: 1px solid black;
-  background-color: lightblue;
 }
 
 .swiper-slide[prefix="_swpSlide-md-54"] div {

@@ -89,7 +89,7 @@ const addPropsToPlay =
       return
     }
 
-    const devDurationPlaySlide = 10000
+    const devDurationPlaySlide = 0
     chunk.playPros.durationToPlaySlide = devDurationPlaySlide 
   };
 /**

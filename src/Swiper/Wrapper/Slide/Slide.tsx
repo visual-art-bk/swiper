@@ -1,4 +1,4 @@
-import React, {
+import {
   ForwardedRef,
   forwardRef,
   MutableRefObject,
@@ -8,10 +8,11 @@ import React, {
 } from "react";
 import "./slide.module.css";
 import Store from "@/Store/Store";
+import Lottie from "./Lottie/Lottie";
 import ImageMatrixer from "./ImageMatrixer/ImageMatrixer";
-import { useRecoilState } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
 
-const { atomToSlide } = Store.getAtoms();
+const { atomToSlide, atomToLotteText, atomToImageMatrixer } = Store.getAtoms();
 
 const PREFIX = "_swpSlide-md-54";
 
@@ -25,7 +26,7 @@ let TIMEOUT_ID: NodeJS.Timeout;
 
 type tIndexes = {
   isDuplicateSlide: boolean;
-  startIndex: number;
+  indexToDuplicateSlide: number;
   endIndex: number;
   uidIndex: number;
   rendering: {
@@ -44,7 +45,7 @@ export const Slide = forwardRef(function Slide(
 ) {
   const {
     endIndex,
-    startIndex,
+    indexToDuplicateSlide,
     uidIndex,
     rendering,
     isDuplicateSlide,
@@ -55,6 +56,9 @@ export const Slide = forwardRef(function Slide(
   const { textContent } = rendering;
 
   const [stateToSlide, setStateToSlide] = useRecoilState(atomToSlide);
+  const [stateToLottieText, setStateToLottieText] =
+    useRecoilState(atomToLotteText);
+  const stateImgMatrixer = useRecoilValue(atomToImageMatrixer);
 
   const [stateClassNamesToDuplicateSlide, setStateClassNamesToDuplicateSlide] =
     useState(CLASSNAME_DEFAULT);
@@ -66,9 +70,6 @@ export const Slide = forwardRef(function Slide(
     window.innerWidth
   );
 
-  /**
-   *
-   */
   const updateClassNames = () => {
     const whenSlideIsActive = uidIndex === stateToSlide.currentIndex;
 
@@ -76,10 +77,12 @@ export const Slide = forwardRef(function Slide(
 
     const whenSlideIsPrev = uidIndex === stateToSlide.currentIndex - 1;
     const whenSlideIsPrevAndLastSlide =
-      stateToSlide.currentIndex === startIndex && uidIndex === endIndex;
+      stateToSlide.currentIndex === indexToDuplicateSlide &&
+      uidIndex === endIndex;
 
     const whenSlideIsPrevAndFirstSlide =
-      stateToSlide.currentIndex === endIndex && uidIndex === startIndex;
+      stateToSlide.currentIndex === endIndex &&
+      uidIndex === indexToDuplicateSlide;
 
     if (whenSlideIsActive) {
       setStateClassNameToSlide(
@@ -132,43 +135,38 @@ export const Slide = forwardRef(function Slide(
     };
   }, [stateToWindowWidth]);
 
-  const delay = (ms: number) =>
-    new Promise((resolve) => setTimeout(resolve, ms));
-
-  const setStateToSlideAsync = () => {
-    // console.log(`index ${uidIndex}_[Slide]: Play DONE`);
-
-    return new Promise((resolve) => {
-      resolve(
-        setStateToSlide({
-          currentIndex: stateToSlide.currentIndex,
-          didPlayUp: true,
-        })
-      );
+  async function playSlideAsync() {
+    setStateToSlide({
+      ...stateToSlide,
+      didPlayUp: true,
     });
-  };
-
-  async function playSlide() {
-    await delay(
-      adjustPlayTime({
-        additionalPlayTime: isDuplicateSlide === true ? 0 : 5000,
-        durationForSlider,
-        durationToPlaySlide: playPros.durationToPlaySlide,
-      })
-    );
-
-    await setStateToSlideAsync();
   }
 
   useEffect(() => {
-    if (uidIndex === stateToSlide.currentIndex) {
-      playSlide();
+    if (stateToSlide.currentIndex !== uidIndex) {
+      return;
     }
 
-    return () => {
-      clearTimeout(TIMEOUT_ID);
-    };
-  }, [stateToSlide.currentIndex]);
+    if (
+      stateToLottieText.didPlayUp === true &&
+      stateImgMatrixer.didPlayUp === true
+    ) {
+      playSlideAsync();
+    }
+  }, [
+    stateToSlide.currentIndex,
+    stateToLottieText.didPlayUp,
+    stateImgMatrixer.didPlayUp,
+  ]);
+  useEffect(() => {
+    if (stateToSlide.currentIndex !== uidIndex) {
+      return;
+    }
+    console.warn(
+      `[ index: ${stateToSlide.currentIndex} ][ B-Slide ] - stateToSlide.didPlayUp:`,
+      stateToSlide.didPlayUp
+    );
+  }, [stateToSlide.didPlayUp]);
 
   return (
     <div
@@ -182,9 +180,19 @@ export const Slide = forwardRef(function Slide(
       style={{ width: `${stateToWindowWidth}px` }}
       ref={ref}
     >
-      {/* DEV */}
       <a href={props.rendering.href}>
-        {/* <ImageMatrixer></ImageMatrixer> */}
+        <Lottie
+          uidIndex={uidIndex}
+          endIndex={endIndex}
+          indexToDuplicateSlide={indexToDuplicateSlide}
+        ></Lottie>
+
+        <ImageMatrixer 
+        uidIndex={uidIndex}
+        endIndex={endIndex}
+        indexToDuplicateSlide={indexToDuplicateSlide}
+        ></ImageMatrixer>
+
         <div>{rendering.textContent}</div>
       </a>
     </div>

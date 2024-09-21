@@ -7,8 +7,8 @@ import {
   useState,
   useReducer,
 } from "react";
-import { SetterOrUpdater, useRecoilState } from "recoil";
-
+import { SetterOrUpdater, useRecoilState, useSetRecoilState } from "recoil";
+import lottie from "lottie-web";
 import "./wrapper.module.css";
 import {
   getRenderingChunks,
@@ -18,11 +18,12 @@ import { Slide } from "./Slide/Slide";
 import Store from "@/Store/Store";
 import setSwiperStateAsync from "./helpersToAsync/setSwiperStateAsync";
 
-const { atomToSwiper, atomToSlide } = Store.getAtoms();
+const { atomToSwiper, atomToSlide, atomToLotteText, atomToImageMatrixer } =
+  Store.getAtoms();
 const PREFIX = "_swiperWrp-je-32";
 
 //TODO duration is related to width of window. set valut to state.
-const DURATION_MS = 500;
+const DURATION_MS = 0;
 
 const DELAY_AFTER_WIDTH_RESIZE_MS = 3000;
 const INDEX_TO_DUPLICATE_SLIDE = 0;
@@ -34,11 +35,17 @@ let TIMEOUT_ID: NodeJS.Timeout;
 
 export default function Wrapper() {
   const [stateToSwiper, setStateToSwiper] = useRecoilState(atomToSwiper);
-  const [stateToClassName, setStateToClassName] = useState("swiper-wrapper");
   const [stateToSlide, setStateToSlide] = useRecoilState(atomToSlide);
+  const setStateToLottieText = useSetRecoilState(atomToLotteText);
+  const setStateToImgMatrixer = useSetRecoilState(atomToImageMatrixer);
+
+  const [stateToClassName, setStateToClassName] = useState("swiper-wrapper");
+
   const [stateToWindowWidth, setStateToWindowInnerWidth] = useState(
     window.innerWidth
   );
+  const [__dev__stateToStop, set__dev__stateStop] = useState(false);
+
   const testSlideChunks = getRenderingChunks({
     indexToDuplicateSlide: INDEX_TO_DUPLICATE_SLIDE,
     sizeToDuplicateSlides: 1,
@@ -55,7 +62,7 @@ export default function Wrapper() {
             itemId: content.itemId,
             href: content.href,
           }}
-          startIndex={INDEX_TO_DUPLICATE_SLIDE}
+          indexToDuplicateSlide={INDEX_TO_DUPLICATE_SLIDE}
           uidIndex={index}
           playPros={{
             durationToPlaySlide:
@@ -69,22 +76,37 @@ export default function Wrapper() {
     );
   });
 
-  const SlideRunner = async () => {
+  const SlideChanger = async () => {
     if (stateToSlide.currentIndex > INDEX_TO_LAST_SLIDE) {
       await setSwiperStateAsync([
         { motionState: "inactive", transition: "" },
         setStateToSwiper,
       ]);
 
-      let ms = 4000;
-      console.warn(`............ {__dev__delay} [${ms}] ms`);
-      await __dev__delay(ms);
-
       setStateToSlide({
-        didPlayUp: false,
+        didPlayUp: true,
         currentIndex: INDEX_TO_DUPLICATE_SLIDE,
       });
-      return;
+
+      return await new Promise((resolve) => {
+        resolve(
+          console.warn(
+            `
+  
+            ##############
+              Initialized all state of children [ index ${stateToSlide.currentIndex}][ A - Slide Changer ] 
+            ##############
+  
+            `
+          )
+        );
+        resolve(
+          setStateToSlide({
+            didPlayUp: false,
+            currentIndex: INDEX_TO_DUPLICATE_SLIDE,
+          })
+        );
+      });
     }
 
     if (
@@ -94,18 +116,41 @@ export default function Wrapper() {
       stateToSwiper.transition === ""
     ) {
       await setSwiperStateAsync([
-        { motionState: "active", transition: "transform 300ms ease-in-out" },
+        { motionState: "active", transition: "transform 500ms ease-in-out" },
         setStateToSwiper,
       ]);
     }
 
-    let ms = 4000;
-    console.warn(`............ {__dev__delay} [${ms}] ms`);
-    await __dev__delay(ms);
-
     setStateToSlide({
-      didPlayUp: false,
+      didPlayUp: true,
       currentIndex: stateToSlide.currentIndex + 1,
+    });
+
+    await new Promise((resolve) => {
+      resolve(
+        console.warn(
+          `
+
+          ##############
+            Initialized all state of children [ index ${stateToSlide.currentIndex}][ A - Slide Changer ] 
+          ##############
+
+          `
+        )
+      );
+      resolve(
+        setStateToSlide({
+          didPlayUp: false,
+          currentIndex: stateToSlide.currentIndex + 1,
+        })
+      ),
+        resolve(
+          setStateToLottieText({
+            didPlayUp: false,
+            isPending: false,
+          })
+        ),
+        resolve(setStateToImgMatrixer({ didPlayUp: false }));
     });
   };
 
@@ -114,7 +159,7 @@ export default function Wrapper() {
       setStateToSwiper({
         ...stateToSwiper,
         motionState: "active",
-        transition: "transform 300ms ease-in-out",
+        transition: "transform 500ms ease-in-out",
       });
     }, DELAY_AFTER_WIDTH_RESIZE_MS);
   };
@@ -131,6 +176,10 @@ export default function Wrapper() {
     resumeSlideAfterResizeWidth();
   };
 
+  const __dev__stop_SlideChanger = () => {
+    set__dev__stateStop(true);
+  };
+
   useEffect(
     function Initializer() {
       const durationToSlides = adjustDuration({
@@ -139,8 +188,8 @@ export default function Wrapper() {
         currentIndex: stateToSlide.currentIndex,
       });
 
-      if (stateToSlide.didPlayUp === true) {
-        TIMEOUT_ID = setTimeout(SlideRunner, durationToSlides);
+      if (stateToSlide.didPlayUp === true && __dev__stateToStop === false) {
+        TIMEOUT_ID = setTimeout(SlideChanger, durationToSlides);
       }
 
       return () => {
@@ -169,36 +218,49 @@ export default function Wrapper() {
     }
   }, [stateToSwiper.motionState]);
 
-  // dev for log
   useEffect(() => {
-    console.warn("stateToSwiper", stateToSwiper);
-  }, [stateToSwiper]);
-  useEffect(() => {
-    console.warn("stateToSlide currentIndex", stateToSlide.currentIndex);
+    if (
+      stateToSlide.currentIndex - 1 === 0 &&
+      stateToSlide.didPlayUp === false
+    ) {
+      console.warn(
+        `[ INTIAILIZED-A-END-Slide Changer ][ index: ${stateToSlide.currentIndex} ]
+      ------------------------------------------------------------------
+      `
+      );
+      return;
+    }
+    console.warn(
+      `[ index:  ${stateToSlide.currentIndex - 1} => ${
+        stateToSlide.currentIndex
+      } ][ A-END-Slide Changer ]
+    ------------------------------------------------------------------
+    `
+    );
   }, [stateToSlide.currentIndex]);
-  useEffect(() => {
-    console.warn("stateToSlide.didPlayUp", stateToSlide.didPlayUp);
-    console.warn(`
-      `);
-  }, [stateToSlide.didPlayUp]);
   return (
-    <div
-      className={stateToClassName}
-      style={{
-        transform: `translate3D(${
-          stateToSlide.currentIndex * -stateToWindowWidth
-        }px, 0, 0)`,
-        transition: stateToSwiper.transition,
-      }}
-      prefix={PREFIX}
-    >
-      {testSlideChunks}
-    </div>
-  );
-}
+    <>
+      <button
+        style={{ position: "fixed", top: "10px", left: "0px", zIndex: "90000" }}
+        onClick={__dev__stop_SlideChanger}
+      >
+        Stop
+      </button>
 
-function __dev__delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+      <div
+        className={stateToClassName}
+        style={{
+          transform: `translate3D(${
+            stateToSlide.currentIndex * -stateToWindowWidth
+          }px, 0, 0)`,
+          transition: stateToSwiper.transition,
+        }}
+        prefix={PREFIX}
+      >
+        {testSlideChunks}
+      </div>
+    </>
+  );
 }
 
 function adjustDuration({
