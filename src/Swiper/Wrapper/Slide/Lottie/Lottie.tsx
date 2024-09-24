@@ -2,8 +2,10 @@ import lottie from "lottie-web";
 import { useEffect, useRef } from "react";
 import { useRecoilValue, useRecoilState } from "recoil";
 import Store from "@/Store/Store";
-import { TimeoutPromiser } from "@/Swiper/helpers/TimeoutPromiser";
-const { TimeoutIdManager, setStateTimeout } = TimeoutPromiser();
+// import { TimeoutPromiser } from "@/Swiper/helpers/TimeoutPromiser";
+// const { TimeoutIdManager, setStateTimeout } = TimeoutPromiser();
+
+let timeOutList: NodeJS.Timeout[] = [];
 
 const { atomToLotteText, atomToSlide } = Store.getAtoms();
 type tLottie = {
@@ -29,29 +31,26 @@ export default function Lottie(props: tLottie) {
         renderer: "svg",
         loop: false,
         autoplay: true,
-        // path: "dist/json/lottie-slide.json",
-        path: 'https://rchr-lab.store/wp-content/uploads/swiper-test/dist/json/lottie-slide.json',
+        path: "dist/json/lottie-slide.json",
+        // path: 'https://rchr-lab.store/wp-content/uploads/swiper-test/dist/json/lottie-slide.json',
         name: `${uidIndex}`,
       })
       .addEventListener("complete", () => {
-        setStateTimeout(
-          [
-            {
-              ...stateToLottieText,
-              didPlayUp: true,
-            },
-            setStateToLottieText,
-          ],
-          3000
-        );
-
-        // setTimeout(() => {
-        //   setStateToLottieText({
-        //     ...stateToLottieText,
-        //     didPlayUp: true,
-        //   });
-        // }, 0);
+        const timeOutId = setTimeout(() => {
+          setStateToLottieText({
+            ...stateToLottieText,
+            didPlayUp: true,
+          });
+        }, 3000);
+        timeOutList.push(timeOutId);
       });
+
+    return () => {
+      timeOutList.forEach((id) => {
+        clearTimeout(id);
+      });
+      timeOutList = [];
+    };
   }, [stateToSlide.currentIndex]);
 
   useEffect(() => {
@@ -66,12 +65,9 @@ export default function Lottie(props: tLottie) {
         return;
       }
     }
-
-    return () => {
-      TimeoutIdManager.clearIds();
-    };
   }, [stateToSlide.currentIndex, stateToLottieText.didPlayUp]);
 
+  // log for dev.
   useEffect(() => {
     if (uidIndex !== stateToSlide.currentIndex) {
       return;

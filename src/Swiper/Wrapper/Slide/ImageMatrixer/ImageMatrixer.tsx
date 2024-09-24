@@ -3,22 +3,22 @@ import { useEffect, useState } from "react";
 import { useRecoilValue, useSetRecoilState, useRecoilState } from "recoil";
 import Store from "@/Store/Store";
 import { TimeoutPromiser } from "@/Swiper/helpers/TimeoutPromiser";
-const { setStateTimeout, TimeoutIdManager } = TimeoutPromiser();
-const TimeOutIdManager = (() => {
-  let ids: NodeJS.Timeout[] = [];
+// const { setStateTimeout, TimeoutIdManager } = TimeoutPromiser();
+// const TimeOutIdManager = (() => {
+//   let ids: NodeJS.Timeout[] = [];
 
-  return {
-    init() {
-      ids = [];
-    },
-    add(id: NodeJS.Timeout) {
-      ids.push(id);
-    },
-    getIds() {
-      return ids;
-    },
-  };
-})();
+//   return {
+//     init() {
+//       ids = [];
+//     },
+//     add(id: NodeJS.Timeout) {
+//       ids.push(id);
+//     },
+//     getIds() {
+//       return ids;
+//     },
+//   };
+// })();
 
 type tMastrxStyleParams = [
   styles: string,
@@ -37,6 +37,8 @@ const INIT_VALUES_FOR_MATRIX = {
   MATRIX_TRANSLATE_X: -100,
   MATRIX_TRANSLATE_Y: -100,
 };
+
+let timeoutIdList: NodeJS.Timeout[] = [];
 
 type tImageMatrix = {
   uidIndex: number;
@@ -64,67 +66,89 @@ export default function ImageMatrixer(props: tImageMatrix) {
     `transform ${DURATION_IMAGE_MATRIXER}ms ease-in-out`
   );
 
-  type tSetStateImgMatrixerAsyncParams = [
-    state: typeof stateImgMatrixer,
-    setState: typeof setStateImgMatrixer
-  ];
-  type tSetStateMaxtrixerTransitionAyncParams = [
-    state: typeof stateMaxtrixerTransition,
-    setState: typeof setStateMaxtrixerTransition
-  ];
+  // type tSetStateImgMatrixerAsyncParams = [
+  //   state: typeof stateImgMatrixer,
+  //   setState: typeof setStateImgMatrixer
+  // ];
+  // type tSetStateMaxtrixerTransitionAyncParams = [
+  //   state: typeof stateMaxtrixerTransition,
+  //   setState: typeof setStateMaxtrixerTransition
+  // ];
 
-  const setStateMaxtrixerTransitionAync = (
-    props: tSetStateMaxtrixerTransitionAyncParams,
-    delay?: number
-  ) => setStateTimeout(props, delay);
+  // const setStateMaxtrixerTransitionAync = (
+  //   props: tSetStateMaxtrixerTransitionAyncParams,
+  //   delay?: number
+  // ) => setStateTimeout(props, delay);
 
-  const setStateMatrixStyleAsync = (props: tMastrxStyleParams, delay: number) =>
-    setStateTimeout(props, delay);
+  // const setStateMatrixStyleAsync = (props: tMastrxStyleParams, delay: number) =>
+  //   setStateTimeout(props, delay);
 
-  const setStateImgMatrixerAsync = (
-    props: tSetStateImgMatrixerAsyncParams,
-    delay?: number
-  ) => setStateTimeout(props, delay);
+  // const setStateImgMatrixerAsync = (
+  //   props: tSetStateImgMatrixerAsyncParams,
+  //   delay?: number
+  // ) => setStateTimeout(props, delay);
 
-  const playMatrixAsync = async () => {
+  const playMatrixer = async (timeoutIds: NodeJS.Timeout[]) => {
     if (stateToSlide.currentIndex === indexToDuplicateSlide) {
-      await setStateMaxtrixerTransitionAync(
-        [``, setStateMaxtrixerTransition],
-        0
-      );
-      await setStateImgMatrixerAsync(
-        [{ didPlayUp: true }, setStateImgMatrixer],
-        0
-      );
-
+      setStateMaxtrixerTransition("");
+      setStateImgMatrixer({ didPlayUp: false });
       return;
     }
 
-    await setStateMaxtrixerTransitionAync(
-      [
-        `transform ${DURATION_IMAGE_MATRIXER}ms ease-in-out`,
-        setStateMaxtrixerTransition,
-      ],
-      0
-    );
+    await new Promise((resolve) => {
+      const timeoutId = setTimeout(() => {
+        resolve(
+          setStateMaxtrixerTransition(
+            `transform ${DURATION_IMAGE_MATRIXER}ms ease-in-out`
+          )
+        );
+      }, 0);
 
-    await setStateMatrixStyleAsync(
-      [
-        makeValuesForMatrix({
-          scaleX: 1.5,
-          scaleY: 1.5,
-          translateX: -100,
-          translateY: -200,
-        }),
-        setStateMatrixStyle,
-      ],
-      1000
-    );
+      timeoutIds.push(timeoutId);
+    });
 
-    await setStateImgMatrixerAsync(
-      [{ didPlayUp: true }, setStateImgMatrixer],
-      10000
-    );
+    await new Promise((resolve) => {
+      const timeoutId = setTimeout(() => {
+        resolve(
+          setStateMatrixStyle(
+            makeValuesForMatrix({
+              scaleX: 1.5,
+              scaleY: 1.5,
+              translateX: -100,
+              translateY: -200,
+            })
+          )
+        );
+      }, 1000);
+
+      timeoutIds.push(timeoutId);
+    });
+
+    // await setStateMatrixStyleAsync(
+    //   [
+    //     makeValuesForMatrix({
+    //       scaleX: 1.5,
+    //       scaleY: 1.5,
+    //       translateX: -100,
+    //       translateY: -200,
+    //     }),
+    //     setStateMatrixStyle,
+    //   ],
+    //   1000
+    // )
+
+    // await setStateImgMatrixerAsync(
+    //   [{ didPlayUp: true }, setStateImgMatrixer],
+    //   10000
+    // );
+
+    await new Promise((resolve) => {
+      const timeoutId = setTimeout(() => {
+        resolve(setStateImgMatrixer({ didPlayUp: true }));
+      }, 3000);
+
+      timeoutIds.push(timeoutId);
+    });
   };
 
   const initStyles = () => {
@@ -146,10 +170,15 @@ export default function ImageMatrixer(props: tImageMatrix) {
       return;
     }
 
-    playMatrixAsync();
+    playMatrixer(timeoutIdList);
 
     return () => {
-      TimeoutIdManager.clearIds();
+      // TimeoutIdManager.clearIds();
+
+      timeoutIdList.forEach((id) => {
+        clearTimeout(id);
+      });
+      timeoutIdList = [];
     };
   }, [stateToSlide.currentIndex]);
 
@@ -211,16 +240,16 @@ function makeValuesForMatrix({
   return `matrix(${scaleX},0,0,${scaleY},${translateX},${translateY})`;
 }
 
-function promiseWithTimeOut(
-  [state, setState]: [state: any, setState: Function],
-  delay?: number
-) {
-  let duration = delay === undefined ? 0 : delay;
-  return new Promise((resolve) => {
-    const timeOutId = setTimeout(() => {
-      resolve(setState(state));
-    }, duration);
+// function promiseWithTimeOut(
+//   [state, setState]: [state: any, setState: Function],
+//   delay?: number
+// ) {
+//   let duration = delay === undefined ? 0 : delay;
+//   return new Promise((resolve) => {
+//     const timeOutId = setTimeout(() => {
+//       resolve(setState(state));
+//     }, duration);
 
-    TimeOutIdManager.add(timeOutId);
-  });
-}
+//     TimeOutIdManager.add(timeOutId);
+//   });
+// }

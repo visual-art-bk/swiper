@@ -1,3 +1,4 @@
+import { __dev__tool__recordTime } from "@/__DEV__TOOLS__/__dev__tool__recordTime";
 import {
   Fragment,
   ReactElement,
@@ -7,13 +8,9 @@ import {
   useState,
   useReducer,
 } from "react";
-import { SetterOrUpdater, useRecoilState, useSetRecoilState } from "recoil";
-import lottie from "lottie-web";
+import { useRecoilState, useSetRecoilState } from "recoil";
 import "./wrapper.module.css";
-import {
-  getRenderingChunks,
-  tRenderingForSlide,
-} from "./renderingForSlide/renderingForSlide";
+import { getRenderingChunks } from "./renderingForSlide/renderingForSlide";
 import { Slide } from "./Slide/Slide";
 import Store from "@/Store/Store";
 import setSwiperStateAsync from "./helpersToAsync/setSwiperStateAsync";
@@ -77,42 +74,50 @@ export default function Wrapper() {
   });
 
   const SlideChanger = async () => {
+    /**
+     * Returns `true` when
+     *  - the slide is the duplicate for which slide change last slide to the dulicate slide
+     * before which first slide.
+     */
     if (stateToSlide.currentIndex > INDEX_TO_LAST_SLIDE) {
       await setSwiperStateAsync([
         { motionState: "inactive", transition: "" },
         setStateToSwiper,
       ]);
 
+      const currentIndex = INDEX_TO_DUPLICATE_SLIDE;
       setStateToSlide({
         didPlayUp: true,
-        currentIndex: INDEX_TO_DUPLICATE_SLIDE,
+        currentIndex,
       });
 
       return await new Promise((resolve) => {
-        resolve(
-          console.warn(
-            `
-  
-            ##############
-              Initialized all state of children [ index ${stateToSlide.currentIndex}][ A - Slide Changer ] 
-            ##############
-  
-            `
-          )
-        );
+        // resolve(
+        //   console.warn(
+        //     `
+
+        //     ##############
+        //       Initialized all state of children [ index ${stateToSlide.currentIndex}][ A - Slide Changer ]
+        //     ##############
+
+        //     `
+        //   )
+        // );
         resolve(
           setStateToSlide({
             didPlayUp: false,
-            currentIndex: INDEX_TO_DUPLICATE_SLIDE,
+            currentIndex,
           })
         );
       });
     }
 
+    /**
+     * Returns true if
+     *  - stateToSwiper was initialized when the duplicate is current slide.
+     */
     if (
-      (stateToSlide.currentIndex === INDEX_TO_DUPLICATE_SLIDE ||
-        stateToSlide.currentIndex === INDEX_TO_START_SLIDE) &&
-      stateToSwiper.motionState === "inactive" &&
+      stateToSwiper.motionState === "inactive" ||
       stateToSwiper.transition === ""
     ) {
       await setSwiperStateAsync([
@@ -121,36 +126,37 @@ export default function Wrapper() {
       ]);
     }
 
+    const currentIndex = stateToSlide.currentIndex + 1;
     setStateToSlide({
       didPlayUp: true,
-      currentIndex: stateToSlide.currentIndex + 1,
+      currentIndex,
     });
 
-    await new Promise((resolve) => {
+    return await new Promise((resolve) => {
       resolve(
         console.warn(
           `
 
           ##############
-            Initialized all state of children [ index ${stateToSlide.currentIndex}][ A - Slide Changer ] 
+            Initialized all state of children [ index ${stateToSlide.currentIndex}][ A - Slide Changer ]
           ##############
 
           `
         )
       );
       resolve(
+        setStateToLottieText({
+          didPlayUp: false,
+          isPending: false,
+        })
+      );
+      resolve(setStateToImgMatrixer({ didPlayUp: false }));
+      resolve(
         setStateToSlide({
           didPlayUp: false,
-          currentIndex: stateToSlide.currentIndex + 1,
+          currentIndex,
         })
-      ),
-        resolve(
-          setStateToLottieText({
-            didPlayUp: false,
-            isPending: false,
-          })
-        ),
-        resolve(setStateToImgMatrixer({ didPlayUp: false }));
+      );
     });
   };
 
@@ -218,26 +224,6 @@ export default function Wrapper() {
     }
   }, [stateToSwiper.motionState]);
 
-  useEffect(() => {
-    if (
-      stateToSlide.currentIndex - 1 === 0 &&
-      stateToSlide.didPlayUp === false
-    ) {
-      console.warn(
-        `[ INTIAILIZED-A-END-Slide Changer ][ index: ${stateToSlide.currentIndex} ]
-      ------------------------------------------------------------------
-      `
-      );
-      return;
-    }
-    console.warn(
-      `[ index:  ${stateToSlide.currentIndex - 1} => ${
-        stateToSlide.currentIndex
-      } ][ A-END-Slide Changer ]
-    ------------------------------------------------------------------
-    `
-    );
-  }, [stateToSlide.currentIndex]);
   return (
     <>
       <button
